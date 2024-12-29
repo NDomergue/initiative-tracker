@@ -304,11 +304,15 @@ function createTracker() {
                 .filter((c) =>
                     c.display
                         ? c.display == creature.display
+                        // Issue here is that we compare creatures by their name or display
+                        // which mean that named creatures are compared with not named creatures.
                         : c.name == creature.name
                 )
                 .map((c) => c.number);
 
-            creature.number = prior?.length ? Math.max(...prior) + 1 : 1;
+            // To not always display a number next to the name,
+            // we set the number to 0 if there is no prior found.
+            creature.number = prior?.length ? Math.max(...prior) + 1 : 0;
         }
     };
 
