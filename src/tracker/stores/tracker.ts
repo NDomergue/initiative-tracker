@@ -290,29 +290,20 @@ function createTracker() {
         trySave();
     }
 
-    const setNumbers = (list: Creature[]) => {
-        for (let i = 0; i < list.length; i++) {
-            const creature = list[i];
-            if (
-                creature.player ||
-                list.filter((c) => c.name == creature.name).length == 1
-            ) {
-                continue;
-            }
-            if (creature.number > 0) continue;
-            const prior = list
-                .filter((c) =>
-                    c.display
-                        ? c.display == creature.display
-                        // Issue here is that we compare creatures by their name or display
-                        // which mean that named creatures are compared with not named creatures.
-                        : c.name == creature.name
-                )
-                .map((c) => c.number);
-
-            // To not always display a number next to the name,
-            // we set the number to 0 if there is no prior found.
-            creature.number = prior?.length ? Math.max(...prior) + 1 : 0;
+    /**
+     * Re-Calculate the number attribute of each non-player Creature in the given list
+     * by counting them grouped by distinct name or display name.
+     * @param lstCreatures 
+     */
+    const setNumbers = (lstCreatures: Creature[]) => {
+        const filteredCreatures = lstCreatures.filter((c) => !c.player);
+        const distinctCreatures: Map<string, number> = new Map();
+        for (const creature of filteredCreatures) {
+            const pseudo = creature.display ?? creature.name;
+            let nb = distinctCreatures.get(pseudo);
+            nb = nb !== undefined ? nb + 1 : 0;
+            creature.number = nb;
+            distinctCreatures.set(pseudo, nb);
         }
     };
 
@@ -326,13 +317,13 @@ function createTracker() {
             if (
                 creature.player &&
                 plugin.data.rollPlayerInitiatives ==
-                    RollPlayerInitiativeBehavior.Never
+                RollPlayerInitiativeBehavior.Never
             )
                 continue;
             if (
                 creature.player &&
                 plugin.data.rollPlayerInitiatives ==
-                    RollPlayerInitiativeBehavior.SetToZero
+                RollPlayerInitiativeBehavior.SetToZero
             ) {
                 creature.initiative = 0;
             } else {
@@ -479,12 +470,8 @@ function createTracker() {
                         (entry.saved ? 0.5 : 1) *
                         (entry.resist ? 0.5 : 1) *
                         Number(entry.customMod);
-                    const name = [creature.name];
-                    if (creature.number > 0) {
-                        name.push(`${creature.number}`);
-                    }
                     const message: UpdateLogMessage = {
-                        name: name.join(" "),
+                        name: creature.getName(),
                         hp: null,
                         temp: false,
                         max: false,
@@ -847,8 +834,8 @@ function createTracker() {
                                 -1 * message.hp
                             ).toString()} damage${
                                 message.unc
-                                    ? " and was knocked unconscious"
-                                    : ""
+                                ? " and was knocked unconscious"
+                                : ""
                             }`
                         );
                     } else if (message.hp > 0) {
@@ -1244,12 +1231,8 @@ class Tracker {
                     (entry.saved ? 0.5 : 1) *
                     (entry.resist ? 0.5 : 1) *
                     Number(entry.customMod);
-                const name = [creature.name];
-                if (creature.number > 0) {
-                    name.push(`${creature.number}`);
-                }
                 const message: UpdateLogMessage = {
-                    name: name.join(" "),
+                    name: creature.getName(),
                     hp: null,
                     temp: false,
                     max: false,
